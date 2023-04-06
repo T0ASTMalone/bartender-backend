@@ -1,0 +1,7 @@
+ALTER TABLE todos DROP CONSTRAINT IF EXISTS fk_todo_category;
+
+ALTER TABLE DROP COLUMN IF EXISTS category_id;
+
+DROP TABLE IF EXISTS categories;
+
+DROP SEQUENCE IF EXISTS categories_id_seq;
