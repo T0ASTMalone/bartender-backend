@@ -18,7 +18,10 @@ use crate::{models::cocktails::Cocktail, repository::database::Database};
 pub struct GenerateQuery {
     #[serde(deserialize_with = "deserialize_stringified_list")]
     pub ingredients: Vec<String>,
+    pub pagestart: u32,
+    pub pagesize: u32,
 }
+
 // https://github.com/actix/actix-web/issues/1301#issuecomment-747403932
 pub fn deserialize_stringified_list<'de, D, I>(deserializer: D) -> std::result::Result<Vec<I>, D::Error> 
 where 
@@ -97,7 +100,7 @@ pub async fn delete_cocktail_by_id(db: Data<Database>, id: Path<Uuid>) -> HttpRe
 #[get("/cocktails/generate")]
 pub async fn generate_cocktails(db: Data<Database>, query: Query<GenerateQuery>) -> HttpResponse {
     println!("[cocktails] generate_cocktails");
-    let cocktails = Cocktail::generate_cocktails(&db, &query.ingredients);
+    let cocktails = Cocktail::generate_cocktails(&db, &query);
     match cocktails {
         Ok(c) => HttpResponse::Ok().json(c),
         Err(err) => HttpResponse::InternalServerError().body(err.to_string()),

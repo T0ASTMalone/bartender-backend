@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 // Note: prelude is required to use things like column.eq_any(vec)
 use diesel::{prelude::*, Queryable, Insertable, AsChangeset, RunQueryDsl, QueryDsl, Selectable, Identifiable};
 
+use crate::api::cocktails::GenerateQuery;
 use crate::repository::schema::cocktails::dsl::*;
 use crate::repository::schema::cocktails::columns::id;
 use crate::repository::database::Database;
@@ -41,8 +42,13 @@ impl From<(String, Vec<(String, String)>, Vec<String>)> for CocktailData {
         Self {
             id: None,
             name: msg.0.clone(),
-            instructions: msg.2.iter().enumerate().map(|(i, x)| InstructionData::from((i, x.to_owned()))).collect(),
-            ingredients: msg.1.iter().map(|x| IngredientData::from(x.to_owned())).collect(),
+            instructions: msg.2.iter()
+                .enumerate()
+                .map(|(i, x)| InstructionData::from((i, x.to_owned())))
+                .collect(),
+            ingredients: msg.1.iter()
+                .map(|x| IngredientData::from(x.to_owned()))
+                .collect(),
             created_at: None,
             updated_at: None,
         }
@@ -102,8 +108,14 @@ impl Cocktail {
             updated_at: Some(Utc::now().naive_utc()),
         };
 
-        let cocktail_ingredients = Ingredient::map_data_to_ingredients(new_cocktail.ingredients, &cocktail.id);
-        let cocktail_instructions = Instruction::map_data_to_instructions(new_cocktail.instructions, &cocktail.id);
+        let cocktail_ingredients = Ingredient::map_data_to_ingredients(
+            new_cocktail.ingredients, 
+            &cocktail.id
+        );
+        let cocktail_instructions = Instruction::map_data_to_instructions(
+            new_cocktail.instructions, 
+            &cocktail.id
+        );
 
         diesel::insert_into(cocktails)
             .values(&cocktail)
@@ -178,19 +190,21 @@ impl Cocktail {
         let rs = openai.completion_create(&body);
         let choice = rs.unwrap().choices;
         let message = &choice[0].text.as_ref().unwrap();
-        println!("{:?}", message);
+        println!("[Cocktails][ask_gpt_for_cocktails] message {:?}", message);
         CocktailData::parse_message(message)
     }
     
     // TODO: Implement pagination. Once on last page of results, start asking Chat GPT
-    pub fn generate_cocktails(db: &Database, ings: &Vec<String>) -> Result<Vec<CocktailData>, Error> {
-        println!("[Cocktail] generate_cocktails {:?}", ings);
+    pub fn generate_cocktails(db: &Database, query: &GenerateQuery) -> Result<Vec<CocktailData>, Error> {
+        println!("[Cocktail][generate_cocktails] ingredients: {:?}", query.ingredients);
         // 1. get all ingredients in db with similar or the same name
-        let ingredients = Ingredient::get_ingredients_by_names(db, ings)?;
+        let ingredients = Ingredient::get_ingredients_by_names(db, &query.ingredients)?;
         let c_ids: Vec<Uuid> = ingredients.iter().map(|x| x.cocktail_id).collect();
 
 
         let c = cocktails.filter(id.eq_any(c_ids))
+            .offset(query.pagestart as i64)
+            .limit(query.pagesize as i64)
             .get_results::<Cocktail>(&mut db.pool.get().unwrap())?;
 
         let mut cocktail_vec: Vec<CocktailData> = c.iter().map(|x| {
@@ -216,7 +230,7 @@ impl Cocktail {
 
         if c.len() <= 1 {
             // generate cocktails from chat gippity
-            let new_cocktails = Cocktail::ask_gpt_for_cocktails(ings);
+            let new_cocktails = Cocktail::ask_gpt_for_cocktails(&query.ingredients);
             new_cocktails.iter().for_each(|c| {
                 // insert into db
                 let x = Cocktail::create_cocktail(db, c.clone()).unwrap();
