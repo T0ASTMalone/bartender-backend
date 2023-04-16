@@ -70,6 +70,7 @@ impl Instruction {
 
     pub fn get_instructions_by_cocktail_id(db: &Database, c_id: &Uuid) -> Result<Vec<Instruction>, Error> {
         instructions.filter(cocktail_id.eq(c_id))
+            .order_by(step)
             .get_results::<Instruction>(&mut db.pool.get().unwrap())
     }
 

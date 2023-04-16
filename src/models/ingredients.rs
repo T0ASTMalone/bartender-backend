@@ -2,7 +2,7 @@ use diesel::dsl::count;
 use diesel::expression::ValidGrouping;
 // use diesel::pg::Pg;
 use diesel::result::Error;
-use diesel::{Queryable, Insertable, RunQueryDsl, Selectable, Identifiable, debug_query};
+use diesel::{Queryable, Insertable, RunQueryDsl, Selectable, Identifiable};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -134,7 +134,10 @@ impl Ingredient {
         let query = ingredients.filter(name.eq_any(ns))
             .select(cocktail_id)
             .group_by(cocktail_id)
-            .having(count(cocktail_id).gt(1))
+            // so that the user could limit the min number of ingredients 
+            // in the suggested cocktails
+            // TODO: update this to be a variable that is passed in
+            .having(count(cocktail_id).ge(1))
             // is this necessary if we don't need to use the count?
             // TODO: remove if not needed
             .order(count(cocktail_id).desc());

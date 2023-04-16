@@ -164,7 +164,9 @@ impl Cocktail {
     
     pub fn ask_gpt_for_cocktails(ingredients: &Vec<String>) -> Vec<CocktailData> {
         let ingredients_str = ingredients.join(",");
-        let proompt = format!("What cockatils can I make with these ingredients? [{},ice] Format the result as a json array '[[name,[ingredents list],[instructions list]],...]'. Where 'name' is the cocktail name string, 'ingredients list' is an array of ingredient name and measurement tuples, and instructions is an array of instruction strings. Limit to 2 cocktails.", ingredients_str);
+        // let proompt = format!("What cockatils can I make with these ingredients? [{},ice] Format the result as a json array like this [[name,[ingredents list],[instructions list]],...]. Where 'name' is the cocktail name string, 'ingredients list' is an array of ingredient name and measurement tuples, and instructions is an array of instruction strings. Limit to 2 cocktails.", ingredients_str);
+        // let proompt = format!("What cockatils can I make with these ingredients? [{},ice] Format the response as a JSON array of tuples, where each tuple has the format [name, [[ingredient_name, amount], ...], [instruction, ...]].  Limit to 2 cocktails.", ingredients_str);
+        let proompt = format!("What cockatils can I make with these ingredients? [{},ice] Format the response as a JSON array of tuples, where each tuple has the format [name_string, [[ingredient_name_string, amount_string], ...], [instruction_string, ...]]. Where 'name' is the cocktail name string, 'ingredients list' is an array of ingredient name and measurement tuples, and instructions is an array of instruction strings. Limit to 2 cocktails.", ingredients_str);
         println!("proompt: {}", proompt);
         let auth = Auth::from_env().unwrap();
         let openai = OpenAI::new(auth, "https://api.openai.com/v1/");
@@ -197,14 +199,20 @@ impl Cocktail {
     // TODO: Implement pagination. Once on last page of results, start asking Chat GPT
     pub fn generate_cocktails(db: &Database, query: &GenerateQuery) -> Result<Vec<CocktailData>, Error> {
         println!("[Cocktail][generate_cocktails] ingredients: {:?}", query.ingredients);
+        let mut limit = query.pagesize.unwrap_or(2);
+
+        if limit > 10 { 
+            limit = 10;
+        }
         // 1. get all ingredients in db with similar or the same name
         let ingredients = Ingredient::get_ingredients_by_names(db, &query.ingredients)?;
+        println!("[Cocktail][generate_cocktails] ingredients: {:?}", ingredients);
+        
         let c_ids: Vec<Uuid> = ingredients.iter().map(|x| x.cocktail_id).collect();
 
-
         let c = cocktails.filter(id.eq_any(c_ids))
-            .offset(query.pagestart as i64)
-            .limit(query.pagesize as i64)
+            .offset(query.pagestart.unwrap_or(0) as i64)
+            .limit(limit as i64)
             .get_results::<Cocktail>(&mut db.pool.get().unwrap())?;
 
         let mut cocktail_vec: Vec<CocktailData> = c.iter().map(|x| {
@@ -228,7 +236,7 @@ impl Cocktail {
             }
         }).collect();
 
-        if c.len() <= 1 {
+        if c.len() < limit as usize {
             // generate cocktails from chat gippity
             let new_cocktails = Cocktail::ask_gpt_for_cocktails(&query.ingredients);
             new_cocktails.iter().for_each(|c| {

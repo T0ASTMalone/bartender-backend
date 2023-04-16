@@ -18,8 +18,8 @@ use crate::{models::cocktails::Cocktail, repository::database::Database};
 pub struct GenerateQuery {
     #[serde(deserialize_with = "deserialize_stringified_list")]
     pub ingredients: Vec<String>,
-    pub pagestart: u32,
-    pub pagesize: u32,
+    pub pagestart: Option<u32>,
+    pub pagesize: Option<u32>,
 }
 
 // https://github.com/actix/actix-web/issues/1301#issuecomment-747403932
