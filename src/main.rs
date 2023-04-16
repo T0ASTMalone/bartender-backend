@@ -59,7 +59,11 @@ async fn main() -> std::io::Result<()> {
     let telemetry = telemetry::OpenTelemetryStack::new();
     let telemetry_data = web::Data::new(telemetry.clone());
 
-    HttpServer::new(move|| 
+
+    HttpServer::new(move||{ 
+            let cors = actix_cors::Cors::default()
+                .allowed_origin("http://localhost:3000/");
+
             App::new()
                 .app_data(app_data.clone())
                 .app_data(telemetry_data.clone())
@@ -68,10 +72,11 @@ async fn main() -> std::io::Result<()> {
                 .service(healthcheck)
                 .service(metrics)
                 .default_service(web::route().to(not_found))
+                .wrap(cors)
                 .wrap(actix_web::middleware::Logger::default())
                 .wrap(RequestTracing::new())
                 .wrap(telemetry.metrics())
-        )
+        })
         .bind(("127.0.0.1", 8080))?
         .run()
         .await

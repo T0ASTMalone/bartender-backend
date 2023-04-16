@@ -235,16 +235,34 @@ impl Cocktail {
                 instructions: mapped_ins, 
             }
         }).collect();
-
+            
+        /*
+         * TODO: limit to those without add blocker or paid?
+         */
         if c.len() < limit as usize {
             // generate cocktails from chat gippity
             let new_cocktails = Cocktail::ask_gpt_for_cocktails(&query.ingredients);
             new_cocktails.iter().for_each(|c| {
                 // insert into db
-                let x = Cocktail::create_cocktail(db, c.clone()).unwrap();
-                let cock = Cocktail::get_cocktail_by_id(db, x.id).unwrap();
-                // add to cocktails vec
-                cocktail_vec.push(cock)
+                let x = Cocktail::create_cocktail(db, c.clone());
+
+                match x {
+                    Ok(x) => {
+                        let result = Cocktail::get_cocktail_by_id(db, x.id);
+                        match result { 
+                            Some(cock) => {
+                                // add to cocktails vec
+                                cocktail_vec.push(cock);
+                            }
+                            None => {
+                                println!("[Cocktail][generate_cocktails] gippity cockatil not found after insert");
+                            }
+                        }
+                    },
+                    Err(err) => {
+                        println!("[Cocktail][generate_cocktails] Error inserting gippity cockatil: {:?}", err);
+                    }
+                }
             });
         }
 
@@ -289,33 +307,33 @@ pub fn test_parse_message() {
                     created_at: None, 
                     updated_at: None,
                 },
-            ],
-            instructions: vec![
-                InstructionData {
-                    instruction: "Add whiskey, lemon juice and simple syrup to a shaker with ice.".to_owned(),
-                    step:0,
-                    id: None, 
-                    cocktail_id: None,
-                    created_at: None,
-                    updated_at: None,
-                },
-                InstructionData {
-                    instruction: "Shake and strain into a rocks glass with fresh ice.".to_owned(),
-                    step:1,
-                    id: None, 
-                    cocktail_id: None,
-                    created_at: None,
-                    updated_at: None,
-                },
-                InstructionData {
-                    instruction:"Garnish with a lemon wedge.".to_owned(),
-                    step:2,
-                    id: None, 
-                    cocktail_id: None,
-                    created_at: None,
-                    updated_at: None,
-                },
-            ]
+                ],
+                instructions: vec![
+                    InstructionData {
+                        instruction: "Add whiskey, lemon juice and simple syrup to a shaker with ice.".to_owned(),
+                        step:0,
+                        id: None, 
+                        cocktail_id: None,
+                        created_at: None,
+                        updated_at: None,
+                    },
+                    InstructionData {
+                        instruction: "Shake and strain into a rocks glass with fresh ice.".to_owned(),
+                        step:1,
+                        id: None, 
+                        cocktail_id: None,
+                        created_at: None,
+                        updated_at: None,
+                    },
+                    InstructionData {
+                        instruction:"Garnish with a lemon wedge.".to_owned(),
+                        step:2,
+                        id: None, 
+                        cocktail_id: None,
+                        created_at: None,
+                        updated_at: None,
+                    },
+                    ]
         },
         CocktailData {
             id: None,
