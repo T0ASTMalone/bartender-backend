@@ -1,18 +1,18 @@
-use std::fmt::Error;
-use chrono::prelude::*;
 use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
 use dotenv::dotenv;
 
-use crate::models::todo::{Todo, Category, TodoItemData, CategoryData};
-use crate::repository::schema::todos::dsl::*;
-use crate::repository::schema::categories::dsl::*;
+// use std::fmt::Error;
+// use chrono::prelude::*;
+// use crate::models::todo::{Todo, Category, TodoItemData, CategoryData};
+// use crate::repository::schema::todos::dsl::*;
+// use crate::repository::schema::categories::dsl::*;
 
 pub type DBPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
 #[derive(Debug, Clone)]
 pub struct Database {
-    pool: DBPool,
+    pub pool: DBPool,
 }
 
 impl Database {
@@ -25,7 +25,7 @@ impl Database {
             .expect("Failed to create pool.");
         Database { pool }
     }
-
+    /*
     pub fn get_categories(&self) -> Vec<Category> {
         categories
             .load::<Category>(&mut self.pool.get().unwrap())
@@ -101,4 +101,5 @@ impl Database {
             .expect("Error updating todo by id");
         Some(todo)
     }
+    */
 }

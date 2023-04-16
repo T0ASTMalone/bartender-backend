@@ -9,3 +9,12 @@ services:
       POSTGRES_PASSWORD: testpass
     ports:
       - "5432:5432"
+
+
+# docker ps to get container name
+#
+# backup db 
+# docker exec <postgres_container_name> pg_dump -U postgres bartender > ~/backups/bartender/backup.sql
+#
+# import data into db
+# docker exec -i <postgres_container_name> psql -U postgres -d bartender < ~/backups/bartender/backup.sql

@@ -4,6 +4,7 @@ use opentelemetry::{global, Context};
 use serde::Serialize;
 
 use crate::repository::database::Database;
+use crate::models::todo::Todo;
 
 mod api;
 mod models;
@@ -29,8 +30,8 @@ async fn metrics(
     db: web::Data<Database>, 
     request: HttpRequest,
 ) -> impl Responder {
-    let categories = db.get_categories();
-    let todos = db.get_todos();
+    let categories = Todo::get_categories(&db);
+    let todos = Todo::get_todos(&db);
 
     let meter = global::meter("global");
     let todo_count = meter.i64_observable_gauge("todo_count").with_description("Number of todos").init();
@@ -62,7 +63,8 @@ async fn main() -> std::io::Result<()> {
             App::new()
                 .app_data(app_data.clone())
                 .app_data(telemetry_data.clone())
-                .configure(api::api::config)
+                .configure(api::todos::config)
+                .configure(api::cocktails::config)
                 .service(healthcheck)
                 .service(metrics)
                 .default_service(web::route().to(not_found))
