@@ -1,6 +1,6 @@
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder, Result, HttpRequest, Handler};
-use actix_web_opentelemetry::RequestTracing;
-use opentelemetry::{global, Context};
+// use actix_web_opentelemetry::RequestTracing;
+// use opentelemetry::{global, Context};
 use serde::Serialize;
 
 use crate::repository::database::Database;
@@ -23,7 +23,7 @@ async fn healthcheck() -> impl Responder {
     };
     HttpResponse::Ok().json(response)
 }
-
+/*
 #[get("/metrics")]
 async fn metrics(
     telemetry: web::Data<telemetry::OpenTelemetryStack>,
@@ -43,6 +43,7 @@ async fn metrics(
     category_count.observe(&cx, categories.len() as i64, &[]);
     telemetry.metrics_handler().call(request).await
 }
+*/
  
 async fn not_found() -> Result<HttpResponse> {
     let response = Response {
@@ -70,11 +71,11 @@ async fn main() -> std::io::Result<()> {
                 .configure(api::todos::config)
                 .configure(api::cocktails::config)
                 .service(healthcheck)
-                .service(metrics)
+                // .service(metrics)
                 .default_service(web::route().to(not_found))
                 .wrap(cors)
                 .wrap(actix_web::middleware::Logger::default())
-                .wrap(RequestTracing::new())
+                // .wrap(RequestTracing::new())
                 .wrap(telemetry.metrics())
         })
         .bind(("127.0.0.1", 8080))?

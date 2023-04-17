@@ -61,7 +61,7 @@ pub async fn get_cocktails(db: Data<Database>) -> HttpResponse {
 }
 
 #[post("/cocktails")]
-#[tracing::instrument]
+// #[tracing::instrument]
 pub async fn create_cocktail(db: Data<Database>, new_cocktail: Json<CocktailData>) -> HttpResponse {
     let todo = Cocktail::create_cocktail(&db, new_cocktail.into_inner());
     match todo {
