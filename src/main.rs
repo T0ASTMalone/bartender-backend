@@ -9,7 +9,7 @@ use serde::Serialize;
 mod api;
 mod models;
 mod repository;
-mod telemetry;
+// mod telemetry;
 
 #[derive(Serialize)]
 pub struct Response {
