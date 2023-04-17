@@ -1,10 +1,10 @@
-use actix_web::{get, web, App, HttpResponse, HttpServer, Responder, Result, HttpRequest, Handler};
+use actix_web::{get, web, App, HttpResponse, HttpServer, Responder, Result};
 // use actix_web_opentelemetry::RequestTracing;
 // use opentelemetry::{global, Context};
 use serde::Serialize;
 
-use crate::repository::database::Database;
-use crate::models::todo::Todo;
+// use crate::repository::database::Database;
+// use crate::models::todo::Todo;
 
 mod api;
 mod models;
@@ -57,26 +57,25 @@ async fn main() -> std::io::Result<()> {
     let todo_db = repository::database::Database::new();
     let app_data = web::Data::new(todo_db);
 
-    let telemetry = telemetry::OpenTelemetryStack::new();
-    let telemetry_data = web::Data::new(telemetry.clone());
+    // let telemetry = telemetry::OpenTelemetryStack::new();
+    // let telemetry_data = web::Data::new(telemetry.clone());
 
 
     HttpServer::new(move||{ 
-            let cors = actix_cors::Cors::default()
-                .allowed_origin("http://localhost:3000/");
+            // let cors = actix_cors::Cors::default().allowed_origin("http://localhost:3000/");
 
             App::new()
                 .app_data(app_data.clone())
-                .app_data(telemetry_data.clone())
+                // .app_data(telemetry_data.clone())
                 .configure(api::todos::config)
                 .configure(api::cocktails::config)
                 .service(healthcheck)
                 // .service(metrics)
                 .default_service(web::route().to(not_found))
-                .wrap(cors)
+                // .wrap(cors)
                 .wrap(actix_web::middleware::Logger::default())
                 // .wrap(RequestTracing::new())
-                .wrap(telemetry.metrics())
+                // .wrap(telemetry.metrics())
         })
         .bind(("127.0.0.1", 8080))?
         .run()
