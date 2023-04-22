@@ -80,7 +80,7 @@ async fn main() -> std::io::Result<()> {
         // change this to 0.0.0.0 on prod
         // local should be 127.0.0.1
         // https://community.render.com/t/actix-web-4-0-failing-on-deploy/4486/3
-        .bind(("0.0.0.0", 8000))?
+        .bind(("127.0.0.1", 8000))?
         .run()
         .await
 }

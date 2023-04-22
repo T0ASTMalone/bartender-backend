@@ -14,7 +14,7 @@ pub async fn get_todos(db: Data<Database>) -> HttpResponse {
 }
 
 #[post("")]
-#[tracing::instrument]
+// #[tracing::instrument]
 pub async fn create_todo(db: Data<Database>, new_todo: Json<Todo>) -> HttpResponse {
     let todo = Todo::create_todo(&db, new_todo.into_inner());
     match todo {
