@@ -50,6 +50,16 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    users (id) {
+        id -> Int4,
+        username -> Text,
+        email -> Text,
+        created_at -> Nullable<Timestamp>,
+        updated_at -> Nullable<Timestamp>,
+    }
+}
+
 diesel::joinable!(ingredients -> cocktails (cocktail_id));
 diesel::joinable!(instructions -> cocktails (cocktail_id));
 diesel::joinable!(todos -> categories (category_id));
@@ -60,4 +70,5 @@ diesel::allow_tables_to_appear_in_same_query!(
     ingredients,
     instructions,
     todos,
+    users,
 );

@@ -1,15 +1,40 @@
+use actix_web::dev::ServiceRequest;
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder, Result};
 // use actix_web_opentelemetry::RequestTracing;
 // use opentelemetry::{global, Context};
 use serde::Serialize;
+use actix_web_httpauth::extractors::bearer::{BearerAuth, Config};
+use actix_web_httpauth::extractors::AuthenticationError;
+use actix_web_httpauth::middleware::HttpAuthentication;
 
 // use crate::repository::database::Database;
 // use crate::models::todo::Todo;
 
 mod api;
+mod auth;
+mod errors;
 mod models;
 mod repository;
 // mod telemetry;
+async fn validator(req: ServiceRequest, credentials: BearerAuth) -> Result<ServiceRequest, (actix_web::Error, ServiceRequest)> {
+    let config = req.app_data::<Config>()
+        .cloned()
+        .unwrap_or_else(Default::default);
+
+    let db = req.app_data::<actix_web::web::Data<repository::database::Database>>().cloned().unwrap();
+
+    match auth::validate_token(credentials.token(), &db.into_inner()).await {
+        Ok(res) => {
+            if res == true {
+                Ok(req)
+            } else {
+                Err((AuthenticationError::from(config).into(), req))
+            }
+        }
+        Err(_) => Err((AuthenticationError::from(config).into(), req)),
+    }
+}
+
 
 #[derive(Serialize)]
 pub struct Response {
@@ -54,8 +79,8 @@ async fn not_found() -> Result<HttpResponse> {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let todo_db = repository::database::Database::new();
-    let app_data = web::Data::new(todo_db);
+    let db = repository::database::Database::new();
+    let app_data = web::Data::new(db);
 
     // let telemetry = telemetry::OpenTelemetryStack::new();
     // let telemetry_data = web::Data::new(telemetry.clone());
@@ -63,12 +88,15 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move||{ 
             // let cors = actix_cors::Cors::default().allowed_origin("http://localhost:3000/");
-
+                
+            let auth = HttpAuthentication::bearer(validator);
             App::new()
                 .app_data(app_data.clone())
+                .wrap(auth)
                 // .app_data(telemetry_data.clone())
                 .configure(api::todos::config)
                 .configure(api::cocktails::config)
+                .configure(api::users::config)
                 .service(healthcheck)
                 // .service(metrics)
                 .default_service(web::route().to(not_found))
@@ -80,7 +108,8 @@ async fn main() -> std::io::Result<()> {
         // change this to 0.0.0.0 on prod
         // local should be 127.0.0.1
         // https://community.render.com/t/actix-web-4-0-failing-on-deploy/4486/3
-        .bind(("0.0.0.0", 8000))?
+        // .bind(("0.0.0.0", 8000))?
+        .bind(("127.0.0.1", 8000))?
         .run()
         .await
 }
